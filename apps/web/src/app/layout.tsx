@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
+import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Next.js App',
-  description: 'Next.js application in monorepo',
+  title: 'Task Manager',
+  description: 'Modern task management application',
 }
 
 export default function RootLayout({
