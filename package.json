@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev:web": "pnpm --filter web dev",
-    "dev:api": "pnpm --filter api start:dev",
     "dev": "pnpm --parallel dev",
-    "build:web": "pnpm --filter web build",
-    "build:api": "pnpm --filter api build",
-    "build": "pnpm --recursive build"
+    "build": "pnpm --recursive build",
+    "db:start": "docker-compose up -d",
+    "db:stop": "docker-compose down",
+    "db:logs": "docker-compose logs -f postgres",
+    "db:setup": "pnpm db:start && pnpm --filter api db:generate && pnpm --filter api db:migrate",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:studio": "pnpm --filter api db:studio",
+    "db:seed": "pnpm --filter api db:seed",
+    "db:reset": "pnpm --filter api db:reset"
   },
   "workspaces": [
     "apps/*"
