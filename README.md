@@ -156,6 +156,18 @@ npm install -g pnpm
 
 3. **Edit the `.env` files with your preferred settings** (optional - defaults work fine)
 
+4. **Setup database and Prisma (REQUIRED):**
+   ```bash
+   pnpm db:setup
+   ```
+   
+   This will:
+   - Start PostgreSQL container
+   - Generate Prisma Client (without this, you'll get import errors!)
+   - Run all database migrations
+
+   ⚠️ **Important:** Don't skip this step! The Prisma Client must be generated before running the application.
+
 ---
 
 ## 🗄️ Database Setup
@@ -413,6 +425,51 @@ Main endpoints:
 - **Backend Port**: 3001
 - **Database Port**: 5432
 - **Prisma Studio Port**: 5555
+
+---
+
+## 🐛 Troubleshooting
+
+### Error: `Module '"@prisma/client"' has no exported member 'PrismaClient'`
+
+This means the Prisma Client hasn't been generated yet. Run:
+
+```bash
+pnpm --filter api db:generate
+# or
+pnpm db:setup
+```
+
+**Why?** After `pnpm install`, Prisma packages are installed but the actual client code (with your models) needs to be generated from `schema.prisma`.
+
+### Error: `Can't reach database server`
+
+Make sure PostgreSQL is running:
+
+```bash
+pnpm db:start
+
+# Check if it's running:
+docker ps
+```
+
+### Database connection issues
+
+1. Check your `.env` and `apps/api/.env` files
+2. Ensure the database credentials match `docker-compose.yml`
+3. Make sure port 5432 is not in use by another PostgreSQL instance
+
+### Port already in use
+
+If ports 3000, 3001, or 5432 are in use:
+
+```bash
+# Find the process
+lsof -i :3000  # or :3001, :5432
+
+# Kill it
+kill -9 <PID>
+```
 
 ---
 
