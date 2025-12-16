@@ -1,6 +1,6 @@
 /**
  * KanbanBoard Component
- * Main board with drag-and-drop functionality
+ * Main board with drag-and-drop functionality using SWR
  */
 
 'use client';
@@ -18,7 +18,7 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Task, TaskStatus, CreateTaskInput } from '@/types/task';
-import { createTask, reorderTasks } from '@/lib/services/taskService';
+import { useTasks, useTaskOperations } from '@/lib/hooks/useTasks';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
 import { TaskModal } from './TaskModal';
@@ -30,8 +30,15 @@ const COLUMNS = [
   { status: 'DONE' as TaskStatus, title: 'Done' },
 ];
 
-export function KanbanBoard() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+interface KanbanBoardProps {
+  initialTasks?: Task[];
+}
+
+export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
+  // Use SWR for data fetching and caching
+  const { tasks, isLoading, isError } = useTasks(initialTasks);
+  const { addTask, reorderTaskList } = useTaskOperations();
+  
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -93,7 +100,7 @@ export function KanbanBoard() {
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     setActiveTask(null);
@@ -103,101 +110,94 @@ export function KanbanBoard() {
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    const activeTask = tasks.find(t => t.id === activeId);
-    if (!activeTask) return;
+    const draggedTask = tasks.find(t => t.id === activeId);
+    if (!draggedTask) return;
 
     // Determine final status
     const overTask = tasks.find(t => t.id === overId);
     const overColumn = COLUMNS.find(col => col.status === overId);
     
-    const finalStatus = overTask?.status || overColumn?.status || activeTask.status;
+    const finalStatus = overTask?.status || overColumn?.status || draggedTask.status;
 
-    setTasks(prevTasks => {
-      // Update status if changed
-      let updatedTasks = prevTasks.map(task => 
-        task.id === activeId ? { ...task, status: finalStatus } : task
-      );
+    // Calculate new order for all tasks
+    let updatedTasks = tasks.map(task => 
+      task.id === activeId ? { ...task, status: finalStatus } : task
+    );
 
-      // Get tasks in the target column
-      const columnTasks = updatedTasks
-        .filter(task => task.status === finalStatus)
-        .sort((a, b) => a.order - b.order);
+    // Get tasks in the target column
+    const columnTasks = updatedTasks
+      .filter(task => task.status === finalStatus)
+      .sort((a, b) => a.order - b.order);
 
-      // If we're reordering within the same column or between columns
-      if (overTask && activeId !== overId) {
-        const oldIndex = columnTasks.findIndex(t => t.id === activeId);
-        const newIndex = columnTasks.findIndex(t => t.id === overId);
+    // If we're reordering within the same column or between columns
+    if (overTask && activeId !== overId) {
+      const oldIndex = columnTasks.findIndex(t => t.id === activeId);
+      const newIndex = columnTasks.findIndex(t => t.id === overId);
 
-        if (oldIndex !== -1 && newIndex !== -1) {
-          const reorderedTasks = arrayMove(columnTasks, oldIndex, newIndex);
-          
-          // Update order values
-          const tasksWithNewOrder = reorderedTasks.map((task, index) => ({
-            ...task,
-            order: index,
-          }));
-
-          // Replace tasks in the target column
-          updatedTasks = updatedTasks.map(task => {
-            if (task.status === finalStatus) {
-              const updatedTask = tasksWithNewOrder.find(t => t.id === task.id);
-              return updatedTask || task;
-            }
-            return task;
-          });
-        }
-      } else {
-        // Just dropped into a column, reorder
-        const reorderedTasks = columnTasks.map((task, index) => ({
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedTasks = arrayMove(columnTasks, oldIndex, newIndex);
+        
+        // Update order values
+        const tasksWithNewOrder = reorderedTasks.map((task, index) => ({
           ...task,
           order: index,
         }));
 
+        // Replace tasks in the target column
         updatedTasks = updatedTasks.map(task => {
           if (task.status === finalStatus) {
-            const updatedTask = reorderedTasks.find(t => t.id === task.id);
+            const updatedTask = tasksWithNewOrder.find(t => t.id === task.id);
             return updatedTask || task;
           }
           return task;
         });
       }
-
-      // Prepare data for backend (will be implemented later)
-      const reorderData = updatedTasks.map(task => ({
-        id: task.id,
-        status: task.status,
-        order: task.order,
+    } else {
+      // Just dropped into a column, reorder
+      const reorderedTasks = columnTasks.map((task, index) => ({
+        ...task,
+        order: index,
       }));
-      
-      // Call service to persist (currently just logs)
-      reorderTasks(reorderData);
 
-      return updatedTasks;
-    });
+      updatedTasks = updatedTasks.map(task => {
+        if (task.status === finalStatus) {
+          const updatedTask = reorderedTasks.find(t => t.id === task.id);
+          return updatedTask || task;
+        }
+        return task;
+      });
+    }
+
+    // Prepare data for backend and update via SWR
+    const reorderData = updatedTasks.map(task => ({
+      id: task.id,
+      status: task.status,
+      order: task.order,
+    }));
+    
+    // Use SWR mutation to update and persist
+    await reorderTaskList(reorderData);
   };
 
   const handleCreateTask = async (input: CreateTaskInput) => {
     try {
-      // Call service (currently returns mock data)
-      const newTask = await createTask(input);
-      
-      // Calculate order (last position in TODO column)
-      const todoTasks = getTasksByStatus('TODO');
-      const maxOrder = todoTasks.length > 0 
-        ? Math.max(...todoTasks.map(t => t.order))
-        : -1;
-      
-      const taskWithOrder = {
-        ...newTask,
-        order: maxOrder + 1,
-      };
-
-      setTasks(prev => [...prev, taskWithOrder]);
+      // Use SWR mutation to create and update cache
+      await addTask(input);
     } catch (error) {
       console.error('Failed to create task:', error);
       // TODO: Show error notification
     }
   };
+
+  if (isError) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.error}>
+          <p>Failed to load tasks. Please try again.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -206,32 +206,39 @@ export function KanbanBoard() {
         <button 
           onClick={() => setIsModalOpen(true)}
           className={styles.createButton}
+          disabled={isLoading}
         >
           + Create Task
         </button>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <div className={styles.board}>
-          {COLUMNS.map(column => (
-            <KanbanColumn
-              key={column.status}
-              status={column.status}
-              title={column.title}
-              tasks={getTasksByStatus(column.status)}
-            />
-          ))}
+      {isLoading && !initialTasks ? (
+        <div className={styles.loading}>
+          <p>Loading tasks...</p>
         </div>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <div className={styles.board}>
+            {COLUMNS.map(column => (
+              <KanbanColumn
+                key={column.status}
+                status={column.status}
+                title={column.title}
+                tasks={getTasksByStatus(column.status)}
+              />
+            ))}
+          </div>
 
-        <DragOverlay>
-          {activeTask ? <TaskCard task={activeTask} /> : null}
-        </DragOverlay>
-      </DndContext>
+          <DragOverlay>
+            {activeTask ? <TaskCard task={activeTask} /> : null}
+          </DragOverlay>
+        </DndContext>
+      )}
 
       <TaskModal
         isOpen={isModalOpen}

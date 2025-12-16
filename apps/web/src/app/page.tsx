@@ -1,15 +1,27 @@
 /**
- * Dashboard Page - Protected by middleware
- * No need for 'use client' or ProtectedRoute wrapper!
- * Middleware handles authentication before this component even loads
+ * Dashboard Page - Server Component with SSR
+ * Protected by middleware - fetches initial data server-side
+ * Takes advantage of Next.js App Router for better performance
  */
 
 import { DashboardClient } from '@/components/dashboard/DashboardClient';
+import { getTasksServerSide } from '@/lib/api/server-tasks';
 
-export default function DashboardPage() {
-  // This is a Server Component by default!
+export default async function DashboardPage() {
+  // This is a Server Component - runs on the server!
   // Middleware already verified the user is authenticated
-  // So this page will never render for unauthenticated users
+  // We can safely fetch data here with the user's cookies
   
-  return <DashboardClient />;
+  // Fetch initial tasks server-side for SSR
+  const initialTasks = await getTasksServerSide();
+  
+  // Pass initial data to client component
+  // Client will use SWR for subsequent updates and caching
+  return <DashboardClient initialTasks={initialTasks} />;
 }
+
+// Optional: Configure page metadata
+export const metadata = {
+  title: 'Dashboard | Task Manager',
+  description: 'Manage your tasks with drag-and-drop',
+};

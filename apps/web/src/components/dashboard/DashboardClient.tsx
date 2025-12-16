@@ -1,15 +1,21 @@
 /**
  * Dashboard Client Component
- * Only this component needs 'use client' for interactivity
+ * Client component for interactivity (logout, auth context)
+ * Receives initial data from Server Component
  */
 
 'use client';
 
 import { useAuthContext } from '@/lib/contexts/AuthContext';
 import { KanbanBoard } from '@/components/kanban/KanbanBoard';
+import { Task } from '@/types/task';
 import styles from './DashboardClient.module.css';
 
-export function DashboardClient() {
+interface DashboardClientProps {
+  initialTasks: Task[];
+}
+
+export function DashboardClient({ initialTasks }: DashboardClientProps) {
   const { user, logout } = useAuthContext();
 
   return (
@@ -29,7 +35,7 @@ export function DashboardClient() {
       </header>
 
       <main className={styles.main}>
-        <KanbanBoard />
+        <KanbanBoard initialTasks={initialTasks} />
       </main>
     </div>
   );
