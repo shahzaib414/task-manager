@@ -23,6 +23,7 @@ export async function apiClient<T>(
   
   const config: RequestInit = {
     ...options,
+    credentials: 'include', // Important: Send cookies with requests
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -50,19 +51,47 @@ export async function apiClient<T>(
   }
 }
 
-export function setAuthToken(token: string | null) {
+// Cookie-based auth helpers (server and client compatible)
+export function setAuthCookie(token: string) {
   if (typeof window !== 'undefined') {
-    if (token) {
-      localStorage.setItem('auth_token', token);
-    } else {
-      localStorage.removeItem('auth_token');
-    }
+    // Set cookie on client side
+    document.cookie = `auth_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
+  }
+}
+
+export function setUserData(user: any) {
+  if (typeof window !== 'undefined') {
+    document.cookie = `auth_user=${JSON.stringify(user)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
+  }
+}
+
+export function clearAuthCookies() {
+  if (typeof window !== 'undefined') {
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    document.cookie = 'auth_user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   }
 }
 
 export function getAuthToken(): string | null {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth_token');
+    const cookies = document.cookie.split(';');
+    const tokenCookie = cookies.find(c => c.trim().startsWith('auth_token='));
+    return tokenCookie ? tokenCookie.split('=')[1] : null;
+  }
+  return null;
+}
+
+export function getUserData(): any | null {
+  if (typeof window !== 'undefined') {
+    const cookies = document.cookie.split(';');
+    const userCookie = cookies.find(c => c.trim().startsWith('auth_user='));
+    if (userCookie) {
+      try {
+        return JSON.parse(decodeURIComponent(userCookie.split('=')[1]));
+      } catch {
+        return null;
+      }
+    }
   }
   return null;
 }
