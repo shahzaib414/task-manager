@@ -61,7 +61,21 @@ export async function apiClient<T>(
       );
     }
 
-    return response.json();
+    // Check if response has content before parsing
+    const contentType = response.headers.get('content-type');
+    const contentLength = response.headers.get('content-length');
+    
+    // No content to parse (204 No Content, empty responses)
+    if (response.status === 204 || contentLength === '0') {
+      return undefined as T;
+    }
+
+    // Only parse JSON if response has JSON content
+    if (contentType && contentType.includes('application/json')) {
+      return response.json();
+    }
+
+    return undefined as T;
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;

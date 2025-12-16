@@ -13,9 +13,10 @@ interface KanbanColumnProps {
   status: TaskStatus;
   title: string;
   tasks: Task[];
+  onViewTask?: (taskId: string) => void;
 }
 
-export function KanbanColumn({ status, title, tasks }: KanbanColumnProps) {
+export function KanbanColumn({ status, title, tasks, onViewTask }: KanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: status,
   });
@@ -40,7 +41,11 @@ export function KanbanColumn({ status, title, tasks }: KanbanColumnProps) {
             </div>
           ) : (
             tasks.map(task => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                onViewClick={onViewTask}
+              />
             ))
           )}
         </SortableContext>

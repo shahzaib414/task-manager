@@ -152,3 +152,128 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* View Modal Specific Styles */
+.content {
+  min-height: 100px;
+}
+
+.loading,
+.error {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.error {
+  color: #ef4444;
+}
+
+.viewField {
+  padding: 12px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.emptyText {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.statusBadge[data-status="TODO"] {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusBadge[data-status="IN_PROGRESS"] {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusBadge[data-status="DONE"] {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.deleteButton {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: #ef4444;
+  color: white;
+  margin-right: auto;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: #dc2626;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.editButton {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: #10b981;
+  color: white;
+}
+
+.editButton:hover:not(:disabled) {
+  background: #059669;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.editButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  font-family: inherit;
+  background: white;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.select:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}

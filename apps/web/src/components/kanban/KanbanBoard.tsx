@@ -17,11 +17,12 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import { Task, TaskStatus, CreateTaskInput } from '@/types/task';
+import { Task, TaskStatus, CreateTaskInput, UpdateTaskInput } from '@/types/task';
 import { useTasks, useTaskOperations } from '@/lib/hooks/useTasks';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
 import { TaskModal } from './TaskModal';
+import { TaskViewModal } from './TaskViewModal';
 import styles from './KanbanBoard.module.css';
 
 const COLUMNS = [
@@ -37,10 +38,12 @@ interface KanbanBoardProps {
 export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
   // Use SWR for data fetching and caching
   const { tasks, isLoading, isError } = useTasks(initialTasks);
-  const { addTask, reorderTaskList, updateTasksOptimistic } = useTaskOperations();
+  const { addTask, modifyTask, removeTask, reorderTaskList, updateTasksOptimistic } = useTaskOperations();
   
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -199,6 +202,34 @@ export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
     }
   };
 
+  const handleViewTask = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setIsViewModalOpen(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedTaskId(null);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await removeTask(taskId);
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      throw error; // Re-throw to let modal handle the error
+    }
+  };
+
+  const handleUpdateTask = async (taskId: string, input: UpdateTaskInput) => {
+    try {
+      await modifyTask(taskId, input);
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      throw error; // Re-throw to let modal handle the error
+    }
+  };
+
   if (isError) {
     return (
       <div className={styles.container}>
@@ -240,6 +271,7 @@ export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
                 status={column.status}
                 title={column.title}
                 tasks={getTasksByStatus(column.status)}
+                onViewTask={handleViewTask}
               />
             ))}
           </div>
@@ -254,6 +286,14 @@ export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateTask}
+      />
+
+      <TaskViewModal
+        isOpen={isViewModalOpen}
+        taskId={selectedTaskId}
+        onClose={handleCloseViewModal}
+        onDelete={handleDeleteTask}
+        onUpdate={handleUpdateTask}
       />
     </div>
   );

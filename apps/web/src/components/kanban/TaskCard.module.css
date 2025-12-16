@@ -16,12 +16,44 @@
   cursor: grabbing;
 }
 
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .taskTitle {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 14px;
   font-weight: 600;
   color: #1f2937;
   line-height: 1.4;
+  flex: 1;
+}
+
+.viewButton {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: background 0.2s ease, transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.viewButton:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.viewButton:active {
+  transform: translateY(0);
 }
 
 .taskDescription {
