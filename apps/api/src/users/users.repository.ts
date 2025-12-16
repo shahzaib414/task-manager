@@ -25,4 +25,15 @@ export class UsersRepository {
       },
     });
   }
+
+  async create(data: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+  }): Promise<User> {
+    return this.prisma.user.create({
+      data,
+    });
+  }
 }

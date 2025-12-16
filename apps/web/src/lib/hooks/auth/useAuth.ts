@@ -1,5 +1,5 @@
 /**
- * Auth hooks - for login form
+ * Auth hooks - for login and registration forms
  */
 
 'use client';
@@ -7,8 +7,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/lib/contexts/AuthContext';
-import { loginUser } from '@/lib/api/auth';
-import { LoginCredentials } from '@/types/auth';
+import { loginUser, registerUser } from '@/lib/api/auth';
+import { LoginCredentials, RegisterCredentials } from '@/types/auth';
 import { ApiError } from '@/lib/api-client';
 
 export function useAuth() {
@@ -43,9 +43,36 @@ export function useAuth() {
     }
   };
 
+  const register = async (credentials: RegisterCredentials) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await registerUser(credentials);
+      
+      // Update global auth context
+      setAuthUser(response.user, response.accessToken);
+      
+      // Redirect to dashboard after successful registration
+      router.push('/dashboard');
+      
+      return response;
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred');
+      }
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     isLoading,
     error,
     login,
+    register,
   };
 }

@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersRepository } from '../users/users.repository';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -54,6 +55,46 @@ export class AuthService {
 
   private async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
     return bcrypt.compare(plainPassword, hashedPassword);
+  }
+
+  async register(registerDto: RegisterDto) {
+    const { email, password, firstName, lastName } = registerDto;
+
+    // Check if user already exists
+    const existingUser = await this.usersRepository.findByEmail(email);
+
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await this.hashPassword(password);
+
+    // Create user
+    const user = await this.usersRepository.create({
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+    });
+
+    // Generate and return access token
+    const accessToken = await this.generateToken(user);
+
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+    };
+  }
+
+  private async hashPassword(password: string): Promise<string> {
+    const saltRounds = 10;
+    return bcrypt.hash(password, saltRounds);
   }
 
   private async generateToken(user: {
