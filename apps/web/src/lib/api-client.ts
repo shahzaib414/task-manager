@@ -2,13 +2,25 @@
  * Base API client for making HTTP requests
  */
 
+import { User } from '@/types/auth';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+/**
+ * API Error Response structure (matches NestJS error format)
+ */
+export interface ApiErrorResponse {
+  statusCode?: number;
+  message: string | string[];
+  error?: string;
+  [key: string]: string | number | string[] | undefined;
+}
 
 export class ApiError extends Error {
   constructor(
     public status: number,
     public message: string,
-    public data?: any
+    public data?: ApiErrorResponse
   ) {
     super(message);
     this.name = 'ApiError';
@@ -37,10 +49,14 @@ export async function apiClient<T>(
     const response = await fetch(url, config);
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = await response.json().catch(() => ({})) as ApiErrorResponse;
+      const errorMessage = Array.isArray(errorData.message) 
+        ? errorData.message.join(', ') 
+        : errorData.message || 'An error occurred';
+      
       throw new ApiError(
         response.status,
-        errorData.message || 'An error occurred',
+        errorMessage,
         errorData
       );
     }
@@ -62,7 +78,7 @@ export function setAuthCookie(token: string) {
   }
 }
 
-export function setUserData(user: any) {
+export function setUserData(user: User) {
   if (typeof window !== 'undefined') {
     document.cookie = `auth_user=${JSON.stringify(user)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
   }
@@ -84,13 +100,13 @@ export function getAuthToken(): string | null {
   return null;
 }
 
-export function getUserData(): any | null {
+export function getUserData(): User | null {
   if (typeof window !== 'undefined') {
     const cookies = document.cookie.split(';');
     const userCookie = cookies.find(c => c.trim().startsWith('auth_user='));
     if (userCookie) {
       try {
-        return JSON.parse(decodeURIComponent(userCookie.split('=')[1]));
+        return JSON.parse(decodeURIComponent(userCookie.split('=')[1])) as User;
       } catch {
         return null;
       }

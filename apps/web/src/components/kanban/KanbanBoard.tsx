@@ -168,8 +168,18 @@ export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
       });
     }
 
-    // Prepare data for backend and update via SWR
-    const reorderData = updatedTasks.map(task => ({
+    // Optimization: Only send tasks that actually changed
+    // Compare updated tasks with original tasks to find changes
+    const changedTasks = updatedTasks.filter(task => {
+      const original = tasks.find(t => t.id === task.id);
+      // Task changed if order or status is different from original
+      return !original || 
+             original.order !== task.order || 
+             original.status !== task.status;
+    });
+    
+    // Only send changed tasks to backend (typically 3-5 instead of 50+)
+    const reorderData = changedTasks.map(task => ({
       id: task.id,
       status: task.status,
       order: task.order,
