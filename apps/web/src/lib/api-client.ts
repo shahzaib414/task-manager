@@ -21,11 +21,14 @@ export async function apiClient<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  // Get token from cookies
+  const token = getAuthToken();
+  
   const config: RequestInit = {
     ...options,
-    credentials: 'include', // Important: Send cookies with requests
     headers: {
       'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }), // Add Authorization header if token exists
       ...options.headers,
     },
   };

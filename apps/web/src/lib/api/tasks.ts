@@ -14,6 +14,13 @@ export async function getTasks(): Promise<Task[]> {
 }
 
 /**
+ * Fetch a single task by ID
+ */
+export async function getTask(id: string): Promise<Task> {
+  return await apiClient<Task>(`/tasks/${id}`, { method: 'GET' });
+}
+
+/**
  * Create a new task
  */
 export async function createTask(input: CreateTaskInput): Promise<Task> {

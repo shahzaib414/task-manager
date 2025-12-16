@@ -26,9 +26,8 @@ export async function getTasksServerSide(): Promise<Task[]> {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Cookie': `auth_token=${authToken}`,
+        'Authorization': `Bearer ${authToken}`,
       },
-      credentials: 'include',
       // Disable caching for fresh data on each request
       cache: 'no-store',
     });
@@ -43,5 +42,42 @@ export async function getTasksServerSide(): Promise<Task[]> {
     console.error('Error fetching tasks server-side:', error);
     // Return empty array instead of throwing to gracefully handle errors
     return [];
+  }
+}
+
+/**
+ * Fetch a single task by ID server-side with cookies
+ * This runs on the server and has access to request cookies
+ */
+export async function getTaskServerSide(id: string): Promise<Task | null> {
+  try {
+    const cookieStore = cookies();
+    const authToken = cookieStore.get('auth_token')?.value;
+
+    if (!authToken) {
+      console.warn('No auth token found on server');
+      return null;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      // Disable caching for fresh data on each request
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch task server-side:', response.status);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching task server-side:', error);
+    // Return null instead of throwing to gracefully handle errors
+    return null;
   }
 }

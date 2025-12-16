@@ -37,7 +37,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
   // Use SWR for data fetching and caching
   const { tasks, isLoading, isError } = useTasks(initialTasks);
-  const { addTask, reorderTaskList } = useTaskOperations();
+  const { addTask, reorderTaskList, updateTasksOptimistic } = useTaskOperations();
   
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,7 +89,7 @@ export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
 
     // If status changed, update immediately for smooth UX
     if (newStatus && activeTask.status !== newStatus) {
-      setTasks(prevTasks => {
+      updateTasksOptimistic(prevTasks => {
         return prevTasks.map(task => {
           if (task.id === activeId) {
             return { ...task, status: newStatus };

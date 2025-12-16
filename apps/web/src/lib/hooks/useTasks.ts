@@ -118,10 +118,23 @@ export function useTaskOperations() {
     await reorderTasks(updates);
   };
 
+  /**
+   * Update tasks optimistically without API call
+   * Useful for drag operations before final drop
+   */
+  const updateTasksOptimistic = (updater: (tasks: Task[]) => Task[]) => {
+    mutate(
+      TASKS_KEY,
+      (currentTasks: Task[] = []) => updater(currentTasks),
+      false
+    );
+  };
+
   return {
     addTask,
     modifyTask,
     removeTask,
     reorderTaskList,
+    updateTasksOptimistic,
   };
 }
