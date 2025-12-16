@@ -105,89 +105,94 @@ export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
-    setActiveTask(null);
-
-    if (!over) return;
+    if (!over) {
+      setActiveTask(null);
+      return;
+    }
 
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    const draggedTask = tasks.find(t => t.id === activeId);
-    if (!draggedTask) return;
+    if (!activeTask) {
+      setActiveTask(null);
+      return;
+    }
+
+    const originalStatus = activeTask.status; // Original status before any optimistic updates
 
     // Determine final status
     const overTask = tasks.find(t => t.id === overId);
     const overColumn = COLUMNS.find(col => col.status === overId);
     
-    const finalStatus = overTask?.status || overColumn?.status || draggedTask.status;
+    const finalStatus = overTask?.status || overColumn?.status || originalStatus;
 
-    // Calculate new order for all tasks
-    let updatedTasks = tasks.map(task => 
-      task.id === activeId ? { ...task, status: finalStatus } : task
-    );
+    const statusChanged = originalStatus !== finalStatus;
+    
+    setActiveTask(null);
 
-    // Get tasks in the target column
-    const columnTasks = updatedTasks
-      .filter(task => task.status === finalStatus)
-      .sort((a, b) => a.order - b.order);
+    if (statusChanged) {
+      if (overTask) { 
+        const targetColumnTasks = tasks
+          .filter(task => task.status === finalStatus)
+          .sort((a, b) => a.order - b.order);
+        
+        const dropIndex = targetColumnTasks.findIndex(t => t.id === overId);
+        
+        if (dropIndex !== -1) {
+          const newColumnTasks = [
+            ...targetColumnTasks.slice(0, dropIndex),
+            { ...activeTask, status: finalStatus, order: dropIndex },
+            ...targetColumnTasks.slice(dropIndex),
+          ];
+          
+          const reorderedWithNewOrder = newColumnTasks.map((task, index) => ({
+            id: task.id,
+            status: finalStatus,
+            order: index,
+          }));
+          
+          await reorderTaskList(reorderedWithNewOrder);
+        } else {
+          await modifyTask(activeId, { status: finalStatus });
+        }
+      } else {
+        await modifyTask(activeId, { status: finalStatus });
+      }
+      return;
+    }
 
-    // If we're reordering within the same column or between columns
-    if (overTask && activeId !== overId) {
+    if (!statusChanged && overTask && activeId !== overId) {
+      const columnTasks = tasks
+        .filter(task => task.status === finalStatus)
+        .sort((a, b) => a.order - b.order);
+
       const oldIndex = columnTasks.findIndex(t => t.id === activeId);
       const newIndex = columnTasks.findIndex(t => t.id === overId);
 
-      if (oldIndex !== -1 && newIndex !== -1) {
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         const reorderedTasks = arrayMove(columnTasks, oldIndex, newIndex);
         
-        // Update order values
         const tasksWithNewOrder = reorderedTasks.map((task, index) => ({
           ...task,
           order: index,
         }));
 
-        // Replace tasks in the target column
-        updatedTasks = updatedTasks.map(task => {
-          if (task.status === finalStatus) {
-            const updatedTask = tasksWithNewOrder.find(t => t.id === task.id);
-            return updatedTask || task;
-          }
-          return task;
+        const changedTasks = tasksWithNewOrder.filter(newTask => {
+          const originalTask = columnTasks.find(t => t.id === newTask.id);
+          return originalTask && originalTask.order !== newTask.order;
         });
-      }
-    } else {
-      // Just dropped into a column, reorder
-      const reorderedTasks = columnTasks.map((task, index) => ({
-        ...task,
-        order: index,
-      }));
-
-      updatedTasks = updatedTasks.map(task => {
-        if (task.status === finalStatus) {
-          const updatedTask = reorderedTasks.find(t => t.id === task.id);
-          return updatedTask || task;
+        
+        if (changedTasks.length > 0) {
+          const reorderData = changedTasks.map(task => ({
+            id: task.id,
+            status: task.status,
+            order: task.order,
+          }));
+          
+          await reorderTaskList(reorderData);
         }
-        return task;
-      });
+      }
     }
-
-    // Optimization: Only send tasks that actually changed
-    // Compare updated tasks with original tasks to find changes
-    const changedTasks = updatedTasks.filter(task => {
-      const original = tasks.find(t => t.id === task.id);
-      // Task changed if order or status is different from original
-      return !original || 
-             original.order !== task.order || 
-             original.status !== task.status;
-    });
-    
-    // Only send changed tasks to backend (typically 3-5 instead of 50+)
-    const reorderData = changedTasks.map(task => ({
-      id: task.id,
-      status: task.status,
-      order: task.order,
-    }));
-    
-    await reorderTaskList(reorderData);
   };
 
   const handleCreateTask = async (input: CreateTaskInput) => {
@@ -213,7 +218,7 @@ export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
       await removeTask(taskId);
     } catch (error) {
       console.error('Failed to delete task:', error);
-      throw error; // Re-throw to let modal handle the error
+      throw error;
     }
   };
 
