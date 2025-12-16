@@ -36,7 +36,6 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
-  // Use SWR for data fetching and caching
   const { tasks, isLoading, isError } = useTasks(initialTasks);
   const { addTask, modifyTask, removeTask, reorderTaskList, updateTasksOptimistic } = useTaskOperations();
   
@@ -188,17 +187,14 @@ export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
       order: task.order,
     }));
     
-    // Use SWR mutation to update and persist
     await reorderTaskList(reorderData);
   };
 
   const handleCreateTask = async (input: CreateTaskInput) => {
     try {
-      // Use SWR mutation to create and update cache
       await addTask(input);
     } catch (error) {
       console.error('Failed to create task:', error);
-      // TODO: Show error notification
     }
   };
 

@@ -28,7 +28,7 @@ export function useAuth() {
       setAuthUser(response.user, response.accessToken);
       
       // Redirect to dashboard after successful login
-      router.push('/');
+      router.push('/dashboard');
       
       return response;
     } catch (err) {
