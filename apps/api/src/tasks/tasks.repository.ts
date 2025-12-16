@@ -59,10 +59,7 @@ export class TasksRepository {
   /**
    * Get the maximum order value for a specific user and status
    */
-  async getMaxOrderByUserAndStatus(
-    userId: string,
-    status: TaskStatus,
-  ): Promise<number> {
+  async getMaxOrderByUserAndStatus(userId: string, status: TaskStatus): Promise<number> {
     const result = await this.prisma.task.aggregate({
       where: {
         userId,

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { Task, TaskStatus } from '@prisma/client';
 import { TasksRepository } from './tasks.repository';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -37,10 +33,7 @@ export class TasksService {
    * Create a new task
    */
   async create(userId: string, createTaskDto: CreateTaskDto): Promise<Task> {
-    const maxOrder = await this.tasksRepository.getMaxOrderByUserAndStatus(
-      userId,
-      TaskStatus.TODO,
-    );
+    const maxOrder = await this.tasksRepository.getMaxOrderByUserAndStatus(userId, TaskStatus.TODO);
 
     return this.tasksRepository.create({
       title: createTaskDto.title,
@@ -56,11 +49,7 @@ export class TasksService {
   /**
    * Update a task
    */
-  async update(
-    id: string,
-    userId: string,
-    updateTaskDto: UpdateTaskDto,
-  ): Promise<Task> {
+  async update(id: string, userId: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
     await this.findOne(id, userId);
 
     if (updateTaskDto.status !== undefined) {
@@ -89,10 +78,7 @@ export class TasksService {
   /**
    * Reorder multiple tasks (used for drag and drop in Kanban)
    */
-  async reorder(
-    userId: string,
-    reorderTasksDto: ReorderTasksDto,
-  ): Promise<void> {
+  async reorder(userId: string, reorderTasksDto: ReorderTasksDto): Promise<void> {
     const taskIds = reorderTasksDto.updates.map((update) => update.id);
     const verificationPromises = taskIds.map((id) =>
       this.tasksRepository.findByIdAndUserId(id, userId),

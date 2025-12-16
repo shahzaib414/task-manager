@@ -51,10 +51,7 @@ export class TasksController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(
-    @Body() createTaskDto: CreateTaskDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async create(@Body() createTaskDto: CreateTaskDto, @CurrentUser() user: JwtPayload) {
     return this.tasksService.create(user.sub, createTaskDto);
   }
 
@@ -87,10 +84,7 @@ export class TasksController {
    */
   @Post('reorder')
   @HttpCode(HttpStatus.OK)
-  async reorder(
-    @Body() reorderTasksDto: ReorderTasksDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  async reorder(@Body() reorderTasksDto: ReorderTasksDto, @CurrentUser() user: JwtPayload) {
     await this.tasksService.reorder(user.sub, reorderTasksDto);
     return { success: true };
   }

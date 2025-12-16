@@ -22,10 +22,7 @@ export class AuthService {
     }
 
     // Verify password
-    const isPasswordValid = await this.verifyPassword(
-      password,
-      user.password,
-    );
+    const isPasswordValid = await this.verifyPassword(password, user.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
@@ -55,10 +52,7 @@ export class AuthService {
     return user;
   }
 
-  private async verifyPassword(
-    plainPassword: string,
-    hashedPassword: string,
-  ): Promise<boolean> {
+  private async verifyPassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
     return bcrypt.compare(plainPassword, hashedPassword);
   }
 
